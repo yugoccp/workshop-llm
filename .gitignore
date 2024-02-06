@@ -31,3 +31,4 @@ replay_pid*
 
 # Environment file
 .env
+env.ps1
