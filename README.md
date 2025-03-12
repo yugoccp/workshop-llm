@@ -56,3 +56,17 @@ Agents are a more advanced form of tools, where the language model can choose to
 
 ./mvnw exec:java -D'exec.mainClass=_05_Agents'
 ```
+
+## Running the examples in Docker
+You can also run the examples in Docker.
+1. Build the Docker image:
+```bash
+docker build -t workshop-llm .
+```
+
+2. Run the Docker container:
+```bash
+docker run -it --rm workshop-llm
+```
+
+Now you can run the examples inside the Docker container using the same commands as above :)
