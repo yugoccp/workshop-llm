@@ -15,6 +15,7 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <langchain4j.version>0.35.0</langchain4j.version>
+    <jsoup.version>1.19.1</jsoup.version>
   </properties>
 
   <dependencies>
@@ -41,6 +42,12 @@
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
       <version>${langchain4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>${jsoup.version}</version>
     </dependency>
 
   </dependencies>
