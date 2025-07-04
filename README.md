@@ -52,8 +52,6 @@ Agents are a more advanced form of tools, where the language model can choose to
 
 ./mvnw exec:java -D'exec.mainClass=_04_1_Tools'
 
-./mvnw exec:java -D'exec.mainClass=_04_2_Tools'
-
 ./mvnw exec:java -D'exec.mainClass=_05_Agents'
 ```
 

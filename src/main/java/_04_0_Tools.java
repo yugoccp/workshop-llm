@@ -10,22 +10,26 @@ public class _04_0_Tools {
     public static void main(String[] args) throws Exception {
 
         var prompt = """
-            Responda à pergunta do USUÁRIO.
-            Caso necessário acionar uma função definido em FERRAMENTAS para responder o USUÁRIO:
+            Responda à pergunta do USER.
+            Caso necessário acionar uma função definido em TOOLS para responder o USER:
             1. Defina os valores dos parâmetros da função.
-            2. Retorne apenas a chamada da função com os parâmetros definidos.
+            2. Retorne SOMENTE a chamada da função com os parâmetros definidos.
             
-            ### USUÁRIO:
+            <USER>
             %s
+            </USER>
 
-            ### FERRAMENTAS:
-            - searchOnWeb(String query): Pesquisa query na Internet
-            - somaNumeros(Integer a, Integer b): Soma dois números inteiros
+            <TOOLS>
+            - searchOnWeb(String query): Pesquisa na Internet pela query fornecida
+            - addNumbers(Integer a, Integer b): Soma dois números inteiros
+            </TOOLS>
             """;
 
-        var scanner = new Scanner(in);
+        out.println("=== TOOLS EXAMPLE ===");
         out.println("Escreva sua mensagem: ");
+        var scanner = new Scanner(in);
         var message = scanner.nextLine();
+        scanner.close();
 
         var chatModel = new ChatModelService();
         var response = chatModel.generate(String.format(prompt, message));

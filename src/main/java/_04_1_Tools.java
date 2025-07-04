@@ -1,89 +1,54 @@
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.service.AiServices;
 import utils.ChatModelService;
 
-import java.util.ArrayList;
-
+import static java.lang.System.in;
 import static java.lang.System.out;
+
+import java.util.Scanner;
 
 public class _04_1_Tools {
 
+    interface ToolsAssistant {
+        String chat(String message);
+    }
+
+    static class MyTools {
+        @Tool("Pesquisa na Internet pela query fornecida")
+        public String searchOnWeb(String query) {
+            out.println("Pesquisando na web: " + query);
+            return "Resultados da pesquisa para: " + query;
+        }
+
+        @Tool("Soma dois números inteiros.")
+        public int addNumbers(Integer a, Integer b) {
+            out.println("Calculando a soma de: " + a + " e " + b);
+            return a + b;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
-        // Define a função da ferramenta em formato JSON
-        var toolDefinition = """
-               {
-                   "type": "function",
-                   "function": {
-                       "name": "squareRoot",
-                       "description": "Returns a square root of a given number.",
-                       "parameters": {
-                           "type": "object",
-                           "properties": {
-                               "num": { "type": "number" }
-                           },
-                           "required": ["num"],
-                           "additionalProperties": "false"
-                       },
-                       "strict": "true"
-                   }
-               }""";
+        
+        out.println("=== TOOLS EXAMPLE ===");
+        out.println("Escreva sua mensagem: ");
+        var scanner = new Scanner(in);
+        var message = scanner.nextLine();
+        scanner.close();
 
-        var messages = new ArrayList<String>();
-        messages.add("""
-                {"role": "user", "content": "Qual a raiz quadrada de 3443242320?"}
-                """);
+        // Configura o modelo de chat OpenAI com a chave de API.
+        var chatModel = OpenAiChatModel.builder()
+                        .modelName("gpt-4o-mini")
+                        .apiKey("demo")
+                        .build();
 
-        var chatModel = new ChatModelService();
-        var response = chatModel.generate(messages, toolDefinition);
+        // Constrói o serviço de IA com o modelo de chat especificado e a ferramenta Calculator.
+        var toolsAssistant = AiServices.builder(ToolsAssistant.class)
+                .chatLanguageModel(chatModel)
+                .tools(new MyTools())
+                .build();
 
-        var mapper = new ObjectMapper();
-        var messageNode = mapper.readTree(response).get("choices").get(0).get("message");
-
-        // Verifica se o modelo solicitou uma chamada de ferramenta
-        var toolCall = extractToolCall(messageNode);
-        if (toolCall != null) {
-
-            // Adiciona o resultado da chamada da ferramenta ao histórico da conversa
-            messages.add(messageNode.toString());
-            messages.add(String.format("""
-                    {"role": "tool", "tool_call_id": "%s", "content": "%f"}
-                    """, toolCall.toolId, squareRoot(toolCall.numArgument)));
-
-            // Gera uma resposta final com as mensagens atualizadas
-            response = chatModel.generate(messages, toolDefinition);
-            messageNode = mapper.readTree(response).get("choices").get(0).get("message");
-        }
-
-        // Exibe o conteúdo final retornado pelo LLM
-        var finalResponse = messageNode.get("content").asText();
-        out.println(finalResponse);
-    }
-
-
-    /**
-     * Calculates the square root of a given number.
-     */
-    public static double squareRoot(double num) {
-        return Math.sqrt(num);
-    }
-
-    /**
-     * Auxiliary record to represent a tool call.
-     */
-    private record ToolCall(String toolId, double numArgument){}
-
-    /**
-     * Extracts the tool call from a message node.
-     */
-    private static ToolCall extractToolCall(JsonNode messageNode) throws Exception {
-        if (messageNode.has("tool_calls")) {
-            var toolNode = messageNode.get("tool_calls").get(0);
-            var toolId = toolNode.get("id").asText();
-            var toolArgs = toolNode.get("function").get("arguments").asText();
-            var mapper = new ObjectMapper();
-            var numArg = mapper.readTree(toolArgs).get("num").asDouble();
-            return new ToolCall(toolId, numArg);
-        }
-        return null;
+        var response = toolsAssistant.chat(message);
+        out.println(response);
     }
 }

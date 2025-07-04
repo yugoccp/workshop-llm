@@ -29,9 +29,11 @@ public class _03_Retrieval {
         embeddingStore.addAll(embeddings, context);
 
         // Obtendo mensagem do usuário
-        var scanner = new Scanner(in);
+        out.println("=== RETRIEVAL AUGMENTED GENERATION EXAMPLE ===");
         out.println("Escreva sua mensagem: ");
+        var scanner = new Scanner(in);
         var message = scanner.nextLine();
+        scanner.close();
 
         // Transformando a mensagem do usuário em vetor e buscando contexto mais próximo
         var embed = embeddingModel.embed(message).content();
