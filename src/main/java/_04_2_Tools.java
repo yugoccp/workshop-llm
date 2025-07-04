@@ -13,18 +13,22 @@ public class _04_2_Tools {
     static class CalculatorTool {
         @Tool("Retorna a raiz quadrada de um número fornecido.")
         public double squareRoot(double num) {
+            out.println("Calculando a raiz quadrada de: " + num);
             return Math.sqrt(num);
         }
     }
 
     public static void main(String[] args) throws Exception {
 
-        // Constrói o serviço de IA com o modelo de chat especificado e a ferramenta Calculator.
-        var toolsAssistant = AiServices.builder(ToolsAssistant.class)
-                .chatLanguageModel(OpenAiChatModel.builder()
+        // Configura o modelo de chat OpenAI com a chave de API.
+        var chatModel = OpenAiChatModel.builder()
                         .modelName("gpt-4o-mini")
                         .apiKey("demo")
-                        .build())
+                        .build();
+
+        // Constrói o serviço de IA com o modelo de chat especificado e a ferramenta Calculator.
+        var toolsAssistant = AiServices.builder(ToolsAssistant.class)
+                .chatLanguageModel(chatModel)
                 .tools(new CalculatorTool())
                 .build();
 
