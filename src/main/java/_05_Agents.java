@@ -5,8 +5,7 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
+import utils.SimpleWebSearchService;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +23,10 @@ public class _05_Agents {
 
     @SystemMessage("""
                 You're responsible to coordinate responses from multiple agents to produce a final answer.
-                Understand the user's request and create a plan to address it.
-                Use the provided agents to delegate tasks to the appropriate agents.
-                Synthesize the results from the agents to provide a coherent response.
+                Follow these steps:
+                1. Understand the user's request and create a plan to address it.
+                2. Use the provided agents to delegate tasks with enough context to the appropriate agents.
+                3. Synthesize the results from the agents to provide a coherent response.
                 Use only the contents provided by the agents.
                 If no agent can handle the request, apologize and ask for a new query.
             """)
@@ -54,25 +54,6 @@ public class _05_Agents {
                 Return structured and detailed search results.
             """)
     interface WebSearchAgent extends BaseChatAgent {
-    }
-
-    public static void main(String[] args) {
-        var chatModel = OpenAiChatModel.builder()
-                .modelName("gpt-4o-mini")
-                .apiKey("demo")
-                .build();
-
-        var orchestratorAgent = AiServices.builder(OrchestratorAgent.class)
-                .chatLanguageModel(chatModel)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-                .tools(new OrchestratorTool(chatModel))
-                .build();
-
-        out.println("=== AGENTS EXAMPLE ===");
-        out.println("\nEscreva sua mensagem:");
-        var scanner = new Scanner(System.in);
-        var response = orchestratorAgent.chat(scanner.nextLine());
-        out.println(response);
     }
 
     static class OrchestratorTool {
@@ -110,28 +91,31 @@ public class _05_Agents {
     }
 
     static class WebSearchTool {
+        
+        private SimpleWebSearchService webSearchService = new SimpleWebSearchService();
+
         @Tool("Return results from the web based on the query.")
         public String searchWeb(String query) throws Exception {
-            query = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String url = "https://html.duckduckgo.com/html/?q=" + query;
-            out.println("Searching the web for: " + query);
-            var doc = Jsoup.connect(url).userAgent("Mozilla/5.0").get();
-            var results = doc.select("div.result__body");
-            var resultsBuilder = new StringBuilder();
-            for (Element result : results) {
-                Element resultTitle = result.selectFirst(".result__title a");
-                String snippet = result.selectFirst("a.result__snippet").text();
-                String title = resultTitle.text();
-                String link = resultTitle.absUrl("href");  // Get absolute link
-                resultsBuilder.append("""
-                    Title: %s
-                    Link: %s
-                    Snippet: %s
-                    ---
-                    """.formatted(title, link, snippet));
-            }
-
-            return resultsBuilder.toString();
+           return webSearchService.search(query);
         }
+    }
+
+    public static void main(String[] args) {
+        var chatModel = OpenAiChatModel.builder()
+                .modelName("gpt-4o-mini")
+                .apiKey("demo")
+                .build();
+
+        var orchestratorAgent = AiServices.builder(OrchestratorAgent.class)
+                .chatLanguageModel(chatModel)
+                .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
+                .tools(new OrchestratorTool(chatModel))
+                .build();
+
+        out.println("=== AGENTS EXAMPLE ===");
+        out.println("\nEscreva sua mensagem:");
+        var scanner = new Scanner(System.in);
+        var response = orchestratorAgent.chat(scanner.nextLine());
+        out.println(response);
     }
 }
