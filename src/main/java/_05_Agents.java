@@ -2,6 +2,7 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 import org.jsoup.Jsoup;
@@ -17,16 +18,19 @@ import static java.lang.System.out;
 
 public class _05_Agents {
 
-    interface BaseAgent {
+    interface BaseChatAgent {
         String chat(String message);
     }
 
     @SystemMessage("""
-                Coordinate responses from multiple agents to produce a final answer.
-                Use only the provided content.
+                You're responsible to coordinate responses from multiple agents to produce a final answer.
+                Understand the user's request and create a plan to address it.
+                Use the provided agents to delegate tasks to the appropriate agents.
+                Synthesize the results from the agents to provide a coherent response.
+                Use only the contents provided by the agents.
                 If no agent can handle the request, apologize and ask for a new query.
             """)
-    interface OrchestratorAgent extends BaseAgent {
+    interface OrchestratorAgent extends BaseChatAgent {
     }
 
     @SystemMessage("""
@@ -34,14 +38,14 @@ public class _05_Agents {
                 Use only the provided data.
                 If analysis is not possible, provide an apology.
             """)
-    interface DataAnalystAgent extends BaseAgent {
+    interface DataAnalystAgent extends BaseChatAgent {
     }
 
     @SystemMessage("""
                 Format the content as a concise executive email.
                 Highlight main points, suggest next steps when applicable, and ask for feedback.
             """)
-    interface EmailWriterAgent extends BaseAgent {
+    interface EmailWriterAgent extends BaseChatAgent {
     }
 
     @SystemMessage("""
@@ -49,7 +53,7 @@ public class _05_Agents {
                 Execute a web search for each query.
                 Return structured and detailed search results.
             """)
-    interface WebSearchAgent extends BaseAgent {
+    interface WebSearchAgent extends BaseChatAgent {
     }
 
     public static void main(String[] args) {
@@ -58,20 +62,14 @@ public class _05_Agents {
                 .apiKey("demo")
                 .build();
 
-        var dataAgent = AiServices.create(DataAnalystAgent.class, chatModel);
-        var emailAgent = AiServices.create(EmailWriterAgent.class, chatModel);
-        var webAgent = AiServices.builder(WebSearchAgent.class)
-                .chatLanguageModel(chatModel)
-                .tools(new WebSearchTool())
-                .build();
-
         var orchestratorAgent = AiServices.builder(OrchestratorAgent.class)
                 .chatLanguageModel(chatModel)
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-                .tools(new OrchestratorTool(dataAgent, emailAgent, webAgent))
+                .tools(new OrchestratorTool(chatModel))
                 .build();
 
-        out.println("Escreva sua mensagem:");
+        out.println("=== AGENTS EXAMPLE ===");
+        out.println("\nEscreva sua mensagem:");
         var scanner = new Scanner(System.in);
         var response = orchestratorAgent.chat(scanner.nextLine());
         out.println(response);
@@ -79,24 +77,35 @@ public class _05_Agents {
 
     static class OrchestratorTool {
 
-        private final Map<String, BaseAgent> agents = new HashMap<>();
+        private DataAnalystAgent dataAgent;
+        private EmailWriterAgent emailAgent;
+        private WebSearchAgent webAgent;
 
-        public OrchestratorTool(DataAnalystAgent dataAgent, EmailWriterAgent emailAgent, WebSearchAgent webAgent) {
-            agents.put("DataAnalystAgent", dataAgent);
-            agents.put("EmailWriterAgent", emailAgent);
-            agents.put("WebSearchAgent", webAgent);
+        public OrchestratorTool(ChatLanguageModel chatModel) {
+            dataAgent = AiServices.create(DataAnalystAgent.class, chatModel);
+            emailAgent = AiServices.create(EmailWriterAgent.class, chatModel);
+            webAgent = AiServices.builder(WebSearchAgent.class)
+                    .chatLanguageModel(chatModel)
+                    .tools(new WebSearchTool())
+                    .build();
         }
 
-        @Tool("""
-                    Delegate tasks to the appropriate agent.
-                    Available agents:
-                    - DataAnalystAgent: Help with data analysis.
-                    - EmailWriterAgent: Help with email writing.
-                    - WebSearchAgent: Help with web searches.
-                """)
-        public String delegate(@P("Agent name") String agent, @P("Task description") String task) {
-            out.println("Delegating task to " + agent + ": " + task);
-            return agents.get(agent).chat(task);
+        @Tool("Delegate task analyse data.")
+        public String delegateDataAgent(@P("Task description") String task) {
+            out.println("\n\n### Delegating task to DataAnalystAgent: " + task);
+            return dataAgent.chat(task);
+        }
+
+        @Tool("Delegate task to write email.")
+        public String delegateEmailAgent(@P("Task description") String task) {
+            out.println("\n\n### Delegating task to EmailWriterAgent: " + task);
+            return emailAgent.chat(task);
+        }
+
+        @Tool("Delegate task to search on web.")
+        public String delegateDataAnalysis(@P("Task description") String task) {
+            out.println("\n\n### Delegating task to WebSearchAgent: " + task);
+            return webAgent.chat(task);
         }
     }
 

@@ -31,7 +31,7 @@ public class _04_1_Tools {
     public static void main(String[] args) throws Exception {
         
         out.println("=== TOOLS EXAMPLE ===");
-        out.println("Escreva sua mensagem: ");
+        out.println("\nEscreva sua mensagem: ");
         var scanner = new Scanner(in);
         var message = scanner.nextLine();
         scanner.close();
@@ -49,6 +49,7 @@ public class _04_1_Tools {
                 .build();
 
         var response = toolsAssistant.chat(message);
+        out.println("\n\nRESPOSTA:");
         out.println(response);
     }
 }

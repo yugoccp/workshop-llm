@@ -9,7 +9,7 @@ public class _04_0_Tools {
 
     public static void main(String[] args) throws Exception {
 
-        var prompt = """
+        var promptTemplate = """
             Responda à pergunta do USER.
             Caso necessário acionar uma função definido em TOOLS para responder o USER:
             1. Defina os valores dos parâmetros da função.
@@ -26,13 +26,18 @@ public class _04_0_Tools {
             """;
 
         out.println("=== TOOLS EXAMPLE ===");
-        out.println("Escreva sua mensagem: ");
+        out.println("\nEscreva sua mensagem: ");
         var scanner = new Scanner(in);
         var message = scanner.nextLine();
         scanner.close();
 
         var chatModel = new ChatModelService();
-        var response = chatModel.generate(String.format(prompt, message));
+        var prompt = String.format(promptTemplate, message);
+        out.println("\n\nPROMPT:");
+        out.println(prompt);
+
+        var response = chatModel.generate(prompt);
+        out.println("\n\nRESPOSTA:");
         out.println(response);
     }
 }
